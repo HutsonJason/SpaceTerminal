@@ -1,0 +1,78 @@
+TabbedContent {
+    height: 100%;
+    width: 100%;
+    background: $surface;
+
+}
+
+TabPane {
+    overflow-y: scroll;
+    align: center middle;
+}
+
+
+
+
+
+
+
+LoginScreen {
+    align: center middle;
+}
+
+#dialog {
+    background: $boost;
+    min-height: 10;
+    max-height: 50;
+    max-width: 100;
+    min-width: 40;
+    border: double $accent;
+    padding: 1 2;
+    margin: 1 2;
+    box-sizing: border-box;
+}
+
+#question {
+    column-span: 2;
+    height: 1fr;
+    width: 1fr;
+    content-align: center middle;
+}
+
+
+
+
+
+
+
+LoginContainer {
+    background: $boost;
+    height: auto;
+    max-width: 100;
+    min-width: 40;
+    border: double $accent;
+    padding: 1 2;
+    margin: 1 2;
+    box-sizing: border-box;
+}
+
+LoginContainer Button {
+    width: 100%;
+    margin-top: 1;
+}
+
+LoginContainer Input {
+    width: 100%;
+    margin-top: 1;
+}
+
+AgentContainer {
+    background: $boost;
+    height: auto;
+    max-width: 100;
+    min-width: 40;
+    border: double $accent;
+    padding: 1 2;
+    margin: 1 2;
+    box-sizing: border-box;
+}
