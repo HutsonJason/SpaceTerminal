@@ -25,15 +25,9 @@ A SpaceTrader API interface. Enter access token to start, or create new account.
 """
 
 
-class LoginScreen(ModalScreen[bool]):
+class LoginScreen(ModalScreen[str]):
     def compose(self) -> ComposeResult:
         yield LoginContainer()
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "button-login":
-            self.dismiss(True)
-        else:
-            self.dismiss(False)
 
 
 class LoginContainer(Container):
@@ -81,18 +75,23 @@ class SpaceApp(App):
         yield Header(show_clock=True)
         with TabbedContent(initial="agent"):
             with TabPane("Login", id="login"):
-                yield LoginContainer()
+                # yield LoginContainer()
+                yield Static("Old Login")
             with TabPane("Agent", id="agent"):
                 yield AgentContainer()
             with TabPane("Ships", id="ships"):
                 yield Static("Ships")
         yield Footer()
 
+    def on_mount(self):
+        self.push_screen(LoginScreen())
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         button_id = event.button.id
         if button_id == "button-login":
             input_widget = self.query_one("#input-access-token", Input)
             account.access_token = input_widget.value
+            self.pop_screen()
             self.query_one(AgentInfo).update_agent_info()
 
     def action_request_quit(self) -> None:
