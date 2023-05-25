@@ -68,7 +68,7 @@ class SpaceApp(App):
     BINDINGS = [
         ("ctrl+t", "app.toggle_dark", "Toggle dark mode"),
         ("ctrl+c,ctrl+q", "app.quit", "Quit"),
-        ("q", "request_quit", "Test Modal"),
+        ("l", "login", "Login"),
     ]
 
     def compose(self) -> ComposeResult:
@@ -94,15 +94,10 @@ class SpaceApp(App):
             self.pop_screen()
             self.query_one(AgentInfo).update_agent_info()
 
-    def action_request_quit(self) -> None:
-        """Action to display the quit dialog."""
+    def action_login(self) -> None:
+        """Action to display the login modal."""
 
-        def check_quit(quit: bool) -> None:
-            """Called when QuitScreen is dismissed."""
-            if quit:
-                self.exit()
-
-        self.push_screen(LoginScreen(), check_quit)
+        self.push_screen(LoginScreen())
 
 
 if __name__ == "__main__":
