@@ -1,7 +1,7 @@
 import space as s
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Container, ScrollableContainer
+from textual.containers import Container
 from textual.screen import ModalScreen, Screen
 from textual.widgets import (
     Button,
@@ -33,10 +33,6 @@ Players are called agents, and each agent is identified by a unique call sign, s
 
 Your starting faction will determine which system you start in, but the default faction should be fine for now.
 """
-
-
-class MainTabContainer(Container):
-    pass
 
 
 class LoginScreen(ModalScreen[str]):
@@ -105,18 +101,6 @@ Credits: {agent["credits"]}
 
 Starting Faction: {agent["startingFaction"]}"""
             self.agent_markdown.update(agent_md)
-
-
-class AgentContainer(MainTabContainer):
-    def compose(self) -> ComposeResult:
-        yield AgentBody()
-
-
-class StatusContainer(MainTabContainer):
-    """Holds the main container of the Status tab."""
-
-    def compose(self) -> ComposeResult:
-        yield StatusBody()
 
 
 class StatusBody(Static):
@@ -190,9 +174,9 @@ class SpaceApp(App):
             yield Header(show_clock=True)
             with TabbedContent(initial="status"):
                 with TabPane("Status", id="status"):
-                    yield StatusContainer()
+                    yield StatusBody()
                 with TabPane("Agent", id="agent"):
-                    yield AgentContainer()
+                    yield AgentBody()
                 with TabPane("Ships", id="ships"):
                     yield Static("Ships")
             yield Footer()
