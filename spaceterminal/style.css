@@ -1,5 +1,16 @@
 TabPane {
     align: center top;
+    height: auto;
+    max-width: 100%;
+    min-width: 40;
+    padding: 1 2;
+    margin: 1 2;
+    box-sizing: border-box;
+}
+
+TabbedContent ContentSwitcher {
+    height: 1fr;
+    overflow-y: scroll;
 }
 
 ModalScreen {
@@ -25,15 +36,6 @@ ModalScreen {
 #modal-login Input {
     width: 100%;
     margin-top: 1;
-}
-
-MainTabContainer {
-    height: auto;
-    max-width: 100%;
-    min-width: 40;
-    padding: 1 2;
-    margin: 1 2;
-    box-sizing: border-box;
 }
 
  .online MarkdownH1{
