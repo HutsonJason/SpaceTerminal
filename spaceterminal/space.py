@@ -3,6 +3,7 @@ import json
 import requests
 
 api_url = "https://api.spacetraders.io/v2/"
+register_url = f"{api_url}register/"
 agent_url = f"{api_url}my/agent/"
 
 
@@ -48,3 +49,28 @@ def get_agent(header):
         }
     """
     return requests.get(agent_url, headers=header).json()
+
+
+def register_agent(symbol: str, faction: str = "COSMIC"):
+    """Registers a new agent.
+
+    https://api.spacetraders.io/v2/register
+
+    Args:
+        symbol: The unique call sign associated with agent identity.
+        faction: The starting faction, which determines which system you start in.
+
+    Returns:
+        json data with all the new account details.
+
+    """
+    header = {
+        "Content-Type": "application/json",
+    }
+    payload = {"symbol": symbol, "faction": faction}
+
+    return requests.post(register_url, json=payload, headers=header).json()
+
+
+def get_status():
+    return requests.get(api_url)

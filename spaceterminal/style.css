@@ -1,13 +1,5 @@
-TabbedContent {
-    height: 100%;
-    width: 100%;
-    background: $surface;
-
-}
-
 TabPane {
-    overflow-y: scroll;
-    align: center middle;
+    align: center top;
 }
 
 ModalScreen {
@@ -35,13 +27,19 @@ ModalScreen {
     margin-top: 1;
 }
 
-AgentContainer {
-    background: $boost;
+MainTabContainer {
     height: auto;
-    max-width: 100;
+    max-width: 100%;
     min-width: 40;
-    border: double $accent;
     padding: 1 2;
     margin: 1 2;
     box-sizing: border-box;
 }
+
+ .online MarkdownH1{
+    background: $success;
+ }
+
+ .offline MarkdownH1{
+    background: $error;
+ }
