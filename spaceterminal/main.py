@@ -1,4 +1,7 @@
+from tkinter import Tk
+
 import space as s
+from textual import on
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Container
@@ -16,6 +19,15 @@ from textual.widgets import (
     TabPane,
 )
 
+
+def copy_to_clipboard(input_string):
+    r = Tk()
+    r.withdraw()
+    r.clipboard_clear()
+    r.clipboard_append(input_string)
+    r.destroy()
+
+
 account = s.Account()
 
 LOGIN_MD = """
@@ -27,8 +39,6 @@ A SpaceTrader API interface. Enter access token to start, or create new account.
 
 REGISTER_MD = """
 
-# Register new agent
-
 Players are called agents, and each agent is identified by a unique call sign, such as ZER0_SH0T or SP4CE_TR4DER. All of your ships, contracts, credits, and other game assets will be associated with your agent identity.
 
 Your starting faction will determine which system you start in, but the default faction should be fine for now.
@@ -39,7 +49,9 @@ class LoginScreen(ModalScreen[str]):
     BINDINGS = [("escape", "app.pop_screen", "Close Login")]
 
     def compose(self) -> ComposeResult:
-        yield LoginContainer(id="modal-login")
+        modal = LoginContainer(id="modal-login")
+        modal.border_title = "Login"
+        yield modal
 
 
 class LoginContainer(Container):
@@ -56,7 +68,9 @@ class RegisterScreen(ModalScreen[str]):
     BINDINGS = [("escape", "app.pop_screen", "Close Register")]
 
     def compose(self) -> ComposeResult:
-        yield RegisterContainer(id="modal-login")
+        modal = RegisterContainer(id="modal-login")
+        modal.border_title = "Register new agent"
+        yield modal
 
 
 class RegisterContainer(Container):
@@ -69,6 +83,26 @@ class RegisterContainer(Container):
         yield Button(
             "Register account", id="button-register-account", variant="success"
         )
+
+
+class RegisterResultsScreen(ModalScreen):
+    BINDINGS = [("escape", "app.pop_screen", "Close Popup")]
+
+    def compose(self) -> ComposeResult:
+        modal = RegisterResultsContainer(id="modal-login")
+        modal.border_title = "Register Successful!"
+        yield modal
+
+
+class RegisterResultsContainer(Container):
+    """Container with results from new account register."""
+
+    def compose(self) -> ComposeResult:
+        yield Static("You access token is:")
+        yield Button(
+            "Copy access token", id="button-copy-access-token", variant="primary"
+        )
+        yield Button("Close", id="button-close-register-success", variant="primary")
 
 
 class AgentBody(Static):
@@ -185,16 +219,17 @@ class SpaceApp(App):
         self.push_screen(self.MainScreen())
         self.push_screen(LoginScreen())
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        button_id = event.button.id
-        if button_id == "button-login":
-            input_widget = self.query_one("#input-access-token", Input)
-            account.access_token = input_widget.value
-            self.pop_screen()
-            self.query_one(AgentBody).update_agent_info()
-        elif button_id == "button-create-account":
-            self.pop_screen()
-            self.push_screen(RegisterScreen())
+    @on(Button.Pressed, "#button-login")
+    def button_login(self) -> None:
+        input_widget = self.query_one("#input-access-token", Input)
+        account.access_token = input_widget.value
+        self.pop_screen()
+        self.query_one(AgentBody).update_agent_info()
+
+    @on(Button.Pressed, "#button-create-account")
+    def button_create_account(self) -> None:
+        self.pop_screen()
+        self.push_screen(RegisterScreen())
 
     def action_login(self) -> None:
         """Action to display the login modal."""

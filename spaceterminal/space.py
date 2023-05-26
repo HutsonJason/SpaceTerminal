@@ -69,7 +69,7 @@ def register_agent(symbol: str, faction: str = "COSMIC"):
     }
     payload = {"symbol": symbol, "faction": faction}
 
-    return requests.post(register_url, json=payload, headers=header).json()
+    return requests.post(register_url, json=payload, headers=header)
 
 
 def get_status():
