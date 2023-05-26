@@ -1,0 +1,47 @@
+TabPane {
+    align: center top;
+    height: auto;
+    max-width: 100%;
+    min-width: 40;
+    padding: 1 2;
+    margin: 1 2;
+    box-sizing: border-box;
+}
+
+TabbedContent ContentSwitcher {
+    height: 1fr;
+    overflow-y: scroll;
+}
+
+ModalScreen {
+    align: center middle;
+}
+
+#modal-login {
+    background: $boost;
+    height: auto;
+    max-width: 100;
+    min-width: 40;
+    border: double $accent;
+    padding: 1 2;
+    margin: 1 2;
+    box-sizing: border-box;
+}
+
+#modal-login Button {
+    width: 100%;
+    margin-top: 1;
+}
+
+#modal-login Input {
+    width: 100%;
+    margin-top: 1;
+}
+
+ .online MarkdownH1{
+    background: $success;
+ }
+
+ .offline MarkdownH1{
+    background: $error;
+ }
