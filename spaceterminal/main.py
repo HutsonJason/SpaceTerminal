@@ -1,4 +1,6 @@
-import pyperclip
+import json
+import os
+
 import space as s
 from textual import on
 from textual.app import App, ComposeResult
@@ -88,6 +90,7 @@ class RegisterResultsContainer(Container):
     """Container with results from new account register."""
 
     token_markdown = Markdown()
+    save_location_markdown = Markdown()
 
     def on_mount(self) -> None:
         self.update_token_markdown()
@@ -100,12 +103,23 @@ Access token is:
 """
         self.token_markdown.update(token_md)
 
+    def update_save_location_markdown(self, save_location) -> None:
+        location_md = f"""
+Save location of access token is:
+
+{save_location}
+"""
+        self.save_location_markdown.update(location_md)
+
     def compose(self) -> ComposeResult:
         yield self.token_markdown
+        yield self.save_location_markdown
         yield Button(
-            "Copy access token", id="button-copy-access-token", variant="primary"
+            "Save access token to file",
+            id="button-save-access-token",
+            variant="primary",
         )
-        yield Button("Close", id="button-close-register-success", variant="primary")
+        yield Button("Close", id="button-close-register-success", variant="error")
 
 
 class AgentBody(Static):
@@ -245,9 +259,19 @@ class SpaceApp(App):
         await self.push_screen(RegisterResultsScreen())
         self.query_one(RegisterResultsContainer).update_token_markdown()
 
-    @on(Button.Pressed, "#button-copy-access-token")
+    @on(Button.Pressed, "#button-save-access-token")
     def button_copy_access_token(self):
-        pyperclip.copy(account.access_token)
+        save_file = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "token.json")
+        )
+        token = {
+            "token": account.access_token,
+        }
+        with open(save_file, "w") as file:
+            json.dump(token, file)
+        self.query_one(RegisterResultsContainer).update_save_location_markdown(
+            save_file
+        )
 
     @on(Button.Pressed, "#button-close-register-success")
     def button_close_register_success(self):
