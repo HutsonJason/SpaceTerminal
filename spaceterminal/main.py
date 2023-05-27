@@ -29,11 +29,13 @@ LOGIN_MD = """
 A SpaceTrader API interface. Enter access token to start, or create new account.
 """
 
-REGISTER_MD = """
+REGISTER_MD = f"""
 
 Players are called agents, and each agent is identified by a unique call sign, such as ZER0_SH0T or SP4CE_TR4DER. All of your ships, contracts, credits, and other game assets will be associated with your agent identity.
 
 Your starting faction will determine which system you start in, but the default faction should be fine for now.
+
+Available recruiting factions: {s.get_factions_list()}
 """
 
 
@@ -68,13 +70,30 @@ class RegisterScreen(ModalScreen[str]):
 class RegisterContainer(Container):
     """Container to register new account."""
 
+    register_markdown = Markdown()
+
+    def on_mount(self):
+        self.register_markdown.update(REGISTER_MD)
+
     def compose(self) -> ComposeResult:
-        yield Markdown(REGISTER_MD)
+        yield self.register_markdown
         yield Input(placeholder="Call Sign", id="input-symbol")
         yield Input(placeholder="Starting Faction", value="COSMIC", id="input-faction")
         yield Button(
             "Register account", id="button-register-account", variant="success"
         )
+
+    def update_register_markdown(self, response):
+        """Update the markdown to give the error code and message."""
+        reason_key = [key for key in response.json()["error"]["data"]][0]
+        register_md = f"""
+Code: {response.json()["error"]["code"]}
+
+{response.json()["error"]["message"]}
+
+Reason: {response.json()["error"]["data"][reason_key][0]}
+"""
+        self.register_markdown.update(register_md)
 
 
 class RegisterResultsScreen(ModalScreen):
@@ -253,14 +272,17 @@ class SpaceApp(App):
         input_symbol = self.query_one("#input-symbol", Input).value
         input_faction = self.query_one("#input-faction", Input).value
         response = s.register_agent(input_symbol, input_faction)
-        account.access_token = response.json()["data"]["token"]
 
-        self.pop_screen()
-        await self.push_screen(RegisterResultsScreen())
-        self.query_one(RegisterResultsContainer).update_token_markdown()
+        if "error" in response.json():
+            self.query_one(RegisterContainer).update_register_markdown(response)
+        else:
+            account.access_token = response.json()["data"]["token"]
+            self.pop_screen()
+            await self.push_screen(RegisterResultsScreen())
+            self.query_one(RegisterResultsContainer).update_token_markdown()
 
     @on(Button.Pressed, "#button-save-access-token")
-    def button_copy_access_token(self):
+    def button_save_access_token(self):
         save_file = os.path.abspath(
             os.path.join(os.path.dirname(__file__), "token.json")
         )
