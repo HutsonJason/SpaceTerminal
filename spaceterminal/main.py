@@ -1,5 +1,4 @@
-from tkinter import Tk
-
+import pyperclip
 import space as s
 from textual import on
 from textual.app import App, ComposeResult
@@ -18,15 +17,6 @@ from textual.widgets import (
     TabbedContent,
     TabPane,
 )
-
-
-def copy_to_clipboard(input_string):
-    r = Tk()
-    r.withdraw()
-    r.clipboard_clear()
-    r.clipboard_append(input_string)
-    r.destroy()
-
 
 account = s.Account()
 
@@ -97,8 +87,21 @@ class RegisterResultsScreen(ModalScreen):
 class RegisterResultsContainer(Container):
     """Container with results from new account register."""
 
+    token_markdown = Markdown()
+
+    def on_mount(self) -> None:
+        self.update_token_markdown()
+
+    def update_token_markdown(self) -> None:
+        token_md = f"""
+Access token is:
+
+{account.access_token}
+"""
+        self.token_markdown.update(token_md)
+
     def compose(self) -> ComposeResult:
-        yield Static("You access token is:")
+        yield self.token_markdown
         yield Button(
             "Copy access token", id="button-copy-access-token", variant="primary"
         )
@@ -230,6 +233,26 @@ class SpaceApp(App):
     def button_create_account(self) -> None:
         self.pop_screen()
         self.push_screen(RegisterScreen())
+
+    @on(Button.Pressed, "#button-register-account")
+    async def button_register_account(self):
+        input_symbol = self.query_one("#input-symbol", Input).value
+        input_faction = self.query_one("#input-faction", Input).value
+        response = s.register_agent(input_symbol, input_faction)
+        account.access_token = response.json()["data"]["token"]
+
+        self.pop_screen()
+        await self.push_screen(RegisterResultsScreen())
+        self.query_one(RegisterResultsContainer).update_token_markdown()
+
+    @on(Button.Pressed, "#button-copy-access-token")
+    def button_copy_access_token(self):
+        pyperclip.copy(account.access_token)
+
+    @on(Button.Pressed, "#button-close-register-success")
+    def button_close_register_success(self):
+        self.pop_screen()
+        self.query_one(AgentBody).update_agent_info()
 
     def action_login(self) -> None:
         """Action to display the login modal."""
