@@ -23,6 +23,7 @@ ModalScreen {
     max-width: 100;
     min-width: 40;
     border: double $accent;
+    border-title-align: center;
     padding: 1 2;
     margin: 1 2;
     box-sizing: border-box;
