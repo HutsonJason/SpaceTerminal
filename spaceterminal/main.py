@@ -1,6 +1,7 @@
 import json
 import os
 
+import jsonTree as jt
 import space as s
 from textual import on
 from textual.app import App, ComposeResult
@@ -18,9 +19,11 @@ from textual.widgets import (
     Static,
     TabbedContent,
     TabPane,
+    Tree,
 )
 
 account = s.Account()
+HEADER = account.header
 
 LOGIN_MD = """
 
@@ -151,15 +154,15 @@ class AgentBody(Static):
         yield self.agent_markdown
 
     def update_agent_info(self) -> None:
-        agent = s.get_agent(account.header)
+        agent = s.get_agent(HEADER)
         if "error" in agent:
             agent_md = f"""
-{agent['error']['message']}
+{agent["error"]["message"]}
 
-Code: {agent['error']['code']}"""
+Code: {agent["error"]["code"]}"""
             self.agent_markdown.update(agent_md)
         else:
-            agent = s.get_agent(account.header)["data"]
+            agent = agent["data"]
             agent_md = f"""
 Account ID: {agent["accountId"]}
 
@@ -228,6 +231,50 @@ Frequency: {status["serverResets"]["frequency"]}
             self.status_markdown.update(status_md)
 
 
+class ShipsBody(Static):
+    BINDINGS = [
+        ("e", "expand_all_tree", "Expand all"),
+        ("c", "collapse_all_tree", "Collapse all"),
+    ]
+
+    ships_markdown = Markdown()
+
+    def action_expand_all_tree(self):
+        node = self.query_one(Tree).get_node_at_line(0)
+        node.expand_all()
+
+    def action_collapse_all_tree(self):
+        node = self.query_one(Tree).get_node_at_line(0)
+        node.collapse_all()
+
+    def compose(self) -> ComposeResult:
+        yield self.ships_markdown
+        yield Tree("Root", id="tree-ships")
+
+    def update_my_ships_info(self):
+        ships = s.get_my_ships(HEADER).json()
+
+        if "error" in ships:
+            ships_md = f"""
+Code: {ships["error"]["code"]}
+
+{ships["error"]["message"]}
+"""
+            self.ships_markdown.update(ships_md)
+
+        else:
+            tree = self.query_one("#tree-ships")
+            tree.show_root = False
+            tree.reset("Root")
+            json_node = tree.root.add("Ships")
+            ships = ships["data"]
+            jt.add_json(json_node, ships)
+            tree.root.expand()
+
+            ships_md = f"""# Available Ships"""
+            self.ships_markdown.update(ships_md)
+
+
 class SpaceApp(App):
     CSS_PATH = "style.css"
     TITLE = "Trading Space"
@@ -248,17 +295,23 @@ class SpaceApp(App):
                 with TabPane("Agent", id="agent"):
                     yield AgentBody()
                 with TabPane("Ships", id="ships"):
-                    yield Static("Ships")
+                    yield ShipsBody()
             yield Footer()
 
     def on_mount(self):
         self.push_screen(self.MainScreen())
         self.push_screen(LoginScreen())
 
+    def action_login(self) -> None:
+        """Action to display the login modal."""
+        self.push_screen(LoginScreen())
+
     @on(Button.Pressed, "#button-login")
     def button_login(self) -> None:
         input_widget = self.query_one("#input-access-token", Input)
         account.access_token = input_widget.value
+        global HEADER
+        HEADER = account.header
         self.pop_screen()
         self.query_one(AgentBody).update_agent_info()
 
@@ -277,6 +330,8 @@ class SpaceApp(App):
             self.query_one(RegisterContainer).update_register_markdown(response)
         else:
             account.access_token = response.json()["data"]["token"]
+            global HEADER
+            HEADER = account.header
             self.pop_screen()
             await self.push_screen(RegisterResultsScreen())
             self.query_one(RegisterResultsContainer).update_token_markdown()
@@ -300,10 +355,11 @@ class SpaceApp(App):
         self.pop_screen()
         self.query_one(AgentBody).update_agent_info()
 
-    def action_login(self) -> None:
-        """Action to display the login modal."""
-
-        self.push_screen(LoginScreen())
+    @on(TabbedContent.TabActivated, tab="#ships")
+    def tab_ships_activated(self):
+        self.query_one(ShipsBody).update_my_ships_info()
+        # This will focus on the tree immediately, so the bindings show in the footer.
+        self.set_focus(self.query_one("#tree-ships"))
 
 
 if __name__ == "__main__":
