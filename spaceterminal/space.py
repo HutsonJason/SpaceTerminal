@@ -6,6 +6,7 @@ api_url = "https://api.spacetraders.io/v2/"
 register_url = f"{api_url}register/"
 agent_url = f"{api_url}my/agent/"
 factions_url = f"{api_url}factions/"
+my_ships_url = f"{api_url}my/ships/"
 
 
 class Account:
@@ -91,3 +92,8 @@ def get_factions_list() -> list:
             factions.append(faction["symbol"])
 
     return factions
+
+
+def get_my_ships(header):
+    """Gets response of agent ships."""
+    return requests.get(my_ships_url, headers=header)
