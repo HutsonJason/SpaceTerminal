@@ -7,7 +7,7 @@ import space as s
 from textual import on
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Container
+from textual.containers import Container, Horizontal
 from textual.screen import ModalScreen, Screen
 from textual.widgets import (
     Button,
@@ -28,7 +28,7 @@ HEADER = account.header
 
 LOGIN_MD = """
 
-# Trading Space
+# SpaceTerminal
 
 A SpaceTrader API interface. Enter access token to start, or create new account.
 """
@@ -283,6 +283,11 @@ class ContractsBody(Static):
     ]
 
     contracts_markdown = Markdown()
+    is_contract_selected = False
+    contract_selected_id = None
+    contract_selected_markdown = Markdown(
+        "Select a contract to accept.", id="markdown-contracts-selected"
+    )
 
     def action_expand_all_tree(self):
         node = self.query_one(Tree).get_node_at_line(0)
@@ -293,16 +298,23 @@ class ContractsBody(Static):
         node.collapse_all()
 
     @on(Tree.NodeSelected)
-    def what_node_selected(self, event: Tree.cursor_node):
-        get_label = str(event.tree.cursor_node.label)
-        if "id" in get_label:
-            get_label = get_label.removeprefix("id='")
-            get_label = get_label.removesuffix("'")
-            md = f"""Contract selected: {get_label}"""
-            self.contracts_markdown.update(md)
+    def get_node_selected(self, event: Tree.cursor_node) -> None:
+        """Gets the contract id of selected node in the contracts tree."""
+        node_label = str(event.tree.cursor_node.label)
+        if "id" in node_label:
+            self.contract_selected_id = node_label.removeprefix("id='").removesuffix(
+                "'"
+            )
+            md = f"""Contract selected: {self.contract_selected_id}"""
+            self.contract_selected_markdown.update(md)
 
     def compose(self) -> ComposeResult:
         yield self.contracts_markdown
+        with Horizontal(id="horizontal-contracts"):
+            yield self.contract_selected_markdown
+            yield Button(
+                "Accept Contract", id="button-accept-contract", variant="success"
+            )
         yield Tree("Root", id="tree-contracts")
 
     def update_my_contracts_info(self):
@@ -331,7 +343,7 @@ Code: {contracts["error"]["code"]}
 
 class SpaceApp(App):
     CSS_PATH = "style.css"
-    TITLE = "Trading Space"
+    TITLE = "SpaceTerminal"
     BINDINGS = [Binding("ctrl+c", "app.quit", "Quit", priority=True, show=False)]
 
     class MainScreen(Screen):
