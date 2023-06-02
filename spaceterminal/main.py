@@ -1,12 +1,13 @@
 import json
 import os
 
+import contracts as con
 import jsonTree as jt
 import space as s
 from textual import on
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Container
+from textual.containers import Container, Horizontal
 from textual.screen import ModalScreen, Screen
 from textual.widgets import (
     Button,
@@ -27,7 +28,7 @@ HEADER = account.header
 
 LOGIN_MD = """
 
-# Trading Space
+# SpaceTerminal
 
 A SpaceTrader API interface. Enter access token to start, or create new account.
 """
@@ -265,7 +266,7 @@ Code: {ships["error"]["code"]}
         else:
             tree = self.query_one("#tree-ships")
             tree.show_root = False
-            tree.reset("Root")
+            tree.reset("#tree-ships")
             json_node = tree.root.add("Ships")
             ships = ships["data"]
             jt.add_json(json_node, ships)
@@ -275,9 +276,74 @@ Code: {ships["error"]["code"]}
             self.ships_markdown.update(ships_md)
 
 
+class ContractsBody(Static):
+    BINDINGS = [
+        ("e", "expand_all_tree", "Expand all"),
+        ("c", "collapse_all_tree", "Collapse all"),
+    ]
+
+    contracts_markdown = Markdown()
+    is_contract_selected = False
+    contract_selected_id = None
+    contract_selected_markdown = Markdown(
+        "Select a contract to accept.", id="markdown-contracts-selected"
+    )
+
+    def action_expand_all_tree(self):
+        node = self.query_one(Tree).get_node_at_line(0)
+        node.expand_all()
+
+    def action_collapse_all_tree(self):
+        node = self.query_one(Tree).get_node_at_line(0)
+        node.collapse_all()
+
+    @on(Tree.NodeSelected)
+    def get_node_selected(self, event: Tree.NodeSelected) -> None:
+        """Gets the contract id of selected node in the contracts tree."""
+        node_label = str(event.node.label)
+        if "id" in node_label:
+            self.contract_selected_id = node_label.removeprefix("id='").removesuffix(
+                "'"
+            )
+            md = f"""Contract selected: {self.contract_selected_id}"""
+            self.contract_selected_markdown.update(md)
+
+    def compose(self) -> ComposeResult:
+        yield self.contracts_markdown
+        with Horizontal(id="horizontal-contracts"):
+            yield self.contract_selected_markdown
+            yield Button(
+                "Accept Contract", id="button-accept-contract", variant="success"
+            )
+        yield Tree("Root", id="tree-contracts")
+
+    def update_my_contracts_info(self):
+        contracts = s.get_my_contracts(HEADER).json()
+
+        if "error" in contracts:
+            contracts_md = f"""
+Code: {contracts["error"]["code"]}
+
+{contracts["error"]["message"]}
+"""
+            self.contracts_markdown.update(contracts_md)
+
+        else:
+            tree = self.query_one("#tree-contracts")
+            tree.show_root = False
+            tree.reset("#tree-contracts")
+            json_node = tree.root.add("Contracts")
+            contracts = contracts["data"]
+            con.create_contract_tree(json_node, contracts)
+            tree.root.expand()
+
+            contracts_md = f"""# Available Contracts"""
+            self.contracts_markdown.update(contracts_md)
+
+
 class SpaceApp(App):
     CSS_PATH = "style.css"
-    TITLE = "Trading Space"
+    TITLE = "SpaceTerminal"
     BINDINGS = [Binding("ctrl+c", "app.quit", "Quit", priority=True, show=False)]
 
     class MainScreen(Screen):
@@ -296,6 +362,8 @@ class SpaceApp(App):
                     yield AgentBody()
                 with TabPane("Ships", id="ships"):
                     yield ShipsBody()
+                with TabPane("Contracts", id="tab-contracts"):
+                    yield ContractsBody()
             yield Footer()
 
     def on_mount(self):
@@ -360,6 +428,12 @@ class SpaceApp(App):
         self.query_one(ShipsBody).update_my_ships_info()
         # This will focus on the tree immediately, so the bindings show in the footer.
         self.set_focus(self.query_one("#tree-ships"))
+
+    @on(TabbedContent.TabActivated, tab="#tab-contracts")
+    def tab_contracts_activated(self):
+        self.query_one(ContractsBody).update_my_contracts_info()
+        # This will focus on the tree immediately, so the bindings show in the footer.
+        self.set_focus(self.query_one("#tree-contracts"))
 
 
 if __name__ == "__main__":

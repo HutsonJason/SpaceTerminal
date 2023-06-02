@@ -7,6 +7,7 @@ register_url = f"{api_url}register/"
 agent_url = f"{api_url}my/agent/"
 factions_url = f"{api_url}factions/"
 my_ships_url = f"{api_url}my/ships/"
+my_contracts_url = f"{api_url}my/contracts/"
 
 
 class Account:
@@ -97,3 +98,8 @@ def get_factions_list() -> list:
 def get_my_ships(header):
     """Gets response of agent ships."""
     return requests.get(my_ships_url, headers=header)
+
+
+def get_my_contracts(header):
+    """Gets response of my contracts."""
+    return requests.get(my_contracts_url, headers=header)

@@ -45,10 +45,23 @@ ModalScreen {
     margin-top: 1;
 }
 
- .online MarkdownH1{
+ .online MarkdownH1 {
     background: $success;
  }
 
- .offline MarkdownH1{
+ .offline MarkdownH1 {
     background: $error;
  }
+
+ #horizontal-contracts {
+    height: auto;
+    width: 100%;
+    background: $boost;
+    padding: 1 2;
+    margin: 1;
+ }
+
+ #markdown-contracts-selected {
+    width: 1fr;
+ }
+
