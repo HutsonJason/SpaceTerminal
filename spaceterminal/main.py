@@ -298,9 +298,9 @@ class ContractsBody(Static):
         node.collapse_all()
 
     @on(Tree.NodeSelected)
-    def get_node_selected(self, event: Tree.cursor_node) -> None:
+    def get_node_selected(self, event: Tree.NodeSelected) -> None:
         """Gets the contract id of selected node in the contracts tree."""
-        node_label = str(event.tree.cursor_node.label)
+        node_label = str(event.node.label)
         if "id" in node_label:
             self.contract_selected_id = node_label.removeprefix("id='").removesuffix(
                 "'"
