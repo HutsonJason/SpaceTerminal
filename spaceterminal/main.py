@@ -4,6 +4,7 @@ import os
 import contracts as con
 import jsonTree as jt
 import space as s
+from client import Client
 from textual import on
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -23,8 +24,7 @@ from textual.widgets import (
     Tree,
 )
 
-account = s.Account()
-HEADER = account.header
+client = Client()
 
 LOGIN_MD = """
 
@@ -122,7 +122,7 @@ class RegisterResultsContainer(Container):
         token_md = f"""
 Access token is:
 
-{account.access_token}
+{client.access_token}
 """
         self.token_markdown.update(token_md)
 
@@ -155,7 +155,7 @@ class AgentBody(Static):
         yield self.agent_markdown
 
     def update_agent_info(self) -> None:
-        agent = s.get_agent(HEADER)
+        agent = s.get_agent(client)
         if "error" in agent:
             agent_md = f"""
 {agent["error"]["message"]}
@@ -253,7 +253,7 @@ class ShipsBody(Static):
         yield Tree("Root", id="tree-ships")
 
     def update_my_ships_info(self):
-        ships = s.get_my_ships(HEADER).json()
+        ships = s.get_my_ships(client).json()
 
         if "error" in ships:
             ships_md = f"""
@@ -318,7 +318,7 @@ class ContractsBody(Static):
         yield Tree("Root", id="tree-contracts")
 
     def update_my_contracts_info(self):
-        contracts = s.get_my_contracts(HEADER).json()
+        contracts = s.get_my_contracts(client).json()
 
         if "error" in contracts:
             contracts_md = f"""
@@ -377,9 +377,7 @@ class SpaceApp(App):
     @on(Button.Pressed, "#button-login")
     def button_login(self) -> None:
         input_widget = self.query_one("#input-access-token", Input)
-        account.access_token = input_widget.value
-        global HEADER
-        HEADER = account.header
+        client.access_token = input_widget.value
         self.pop_screen()
         self.query_one(AgentBody).update_agent_info()
 
@@ -397,9 +395,7 @@ class SpaceApp(App):
         if "error" in response.json():
             self.query_one(RegisterContainer).update_register_markdown(response)
         else:
-            account.access_token = response.json()["data"]["token"]
-            global HEADER
-            HEADER = account.header
+            client.access_token = response.json()["data"]["token"]
             self.pop_screen()
             await self.push_screen(RegisterResultsScreen())
             self.query_one(RegisterResultsContainer).update_token_markdown()
@@ -410,7 +406,7 @@ class SpaceApp(App):
             os.path.join(os.path.dirname(__file__), "token.json")
         )
         token = {
-            "token": account.access_token,
+            "token": client.access_token,
         }
         with open(save_file, "w") as file:
             json.dump(token, file)
