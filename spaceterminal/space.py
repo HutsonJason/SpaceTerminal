@@ -1,5 +1,3 @@
-import json
-
 import requests
 
 api_url = "https://api.spacetraders.io/v2/"
@@ -10,35 +8,13 @@ my_ships_url = f"{api_url}my/ships/"
 my_contracts_url = f"{api_url}my/contracts/"
 
 
-class Account:
-    """Holds the account access token and the header for API calls."""
-
-    def __init__(self, access_token: str = None):
-        self.access_token = access_token
-
-    @property
-    def header(self):
-        return {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.access_token}",
-        }
-
-    @property
-    def access_token(self):
-        return self._access_token
-
-    @access_token.setter
-    def access_token(self, access_token):
-        self._access_token = access_token
-
-
-def get_agent(header):
+def get_agent(client):
     """Gets My Agent info.
 
     https://api.spacetraders.io/v2/my/agent
 
     Args:
-        header: The API request header with the access token.
+        client: The Client object with session.
 
     Returns:
         {
@@ -51,7 +27,7 @@ def get_agent(header):
           }
         }
     """
-    return requests.get(agent_url, headers=header).json()
+    return client.session.get(agent_url).json()
 
 
 def register_agent(symbol: str = "", faction: str = "COSMIC"):
@@ -95,11 +71,11 @@ def get_factions_list() -> list:
     return factions
 
 
-def get_my_ships(header):
+def get_my_ships(client):
     """Gets response of agent ships."""
-    return requests.get(my_ships_url, headers=header)
+    return client.session.get(my_ships_url)
 
 
-def get_my_contracts(header):
+def get_my_contracts(client):
     """Gets response of my contracts."""
-    return requests.get(my_contracts_url, headers=header)
+    return client.session.get(my_contracts_url)
