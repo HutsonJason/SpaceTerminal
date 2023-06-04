@@ -4,6 +4,7 @@ import os
 import contracts as con
 import jsonTree as jt
 import space as s
+from agent import Agent
 from client import Client
 from textual import on
 from textual.app import App, ComposeResult
@@ -24,7 +25,8 @@ from textual.widgets import (
     Tree,
 )
 
-client = Client()
+CLIENT = Client()
+AGENT = Agent(CLIENT)
 
 LOGIN_MD = """
 
@@ -53,7 +55,7 @@ class LoginScreen(ModalScreen[str]):
 
 
 class LoginContainer(Container):
-    """Container to login with access token, or create new account."""
+    """Container to log in with access token, or create new account."""
 
     def compose(self) -> ComposeResult:
         yield Markdown(LOGIN_MD)
@@ -122,7 +124,7 @@ class RegisterResultsContainer(Container):
         token_md = f"""
 Access token is:
 
-{client.access_token}
+{CLIENT.access_token}
 """
         self.token_markdown.update(token_md)
 
@@ -155,25 +157,27 @@ class AgentBody(Static):
         yield self.agent_markdown
 
     def update_agent_info(self) -> None:
-        agent = s.get_agent(client)
-        if "error" in agent:
-            agent_md = f"""
-{agent["error"]["message"]}
+        AGENT.update_agent()
 
-Code: {agent["error"]["code"]}"""
+        if AGENT.error is not None:
+            agent_md = f"""
+Code: {AGENT.error["code"]}
+
+{AGENT.error["message"]}"""
             self.agent_markdown.update(agent_md)
         else:
-            agent = agent["data"]
             agent_md = f"""
-Account ID: {agent["accountId"]}
+Account ID: {AGENT.account_id}
 
-Symbol: {agent["symbol"]}
+Symbol: {AGENT.symbol}
 
-Headquarters: {agent["headquarters"]}
+Headquarters: {AGENT.headquarters}
 
-Credits: {agent["credits"]}
+Credits: {AGENT.my_credits}
 
-Starting Faction: {agent["startingFaction"]}"""
+Starting Faction: {AGENT.starting_faction}
+
+Last Updated: {AGENT.last_updated}"""
             self.agent_markdown.update(agent_md)
 
 
@@ -253,7 +257,7 @@ class ShipsBody(Static):
         yield Tree("Root", id="tree-ships")
 
     def update_my_ships_info(self):
-        ships = s.get_my_ships(client).json()
+        ships = s.get_my_ships(CLIENT).json()
 
         if "error" in ships:
             ships_md = f"""
@@ -318,7 +322,7 @@ class ContractsBody(Static):
         yield Tree("Root", id="tree-contracts")
 
     def update_my_contracts_info(self):
-        contracts = s.get_my_contracts(client).json()
+        contracts = s.get_my_contracts(CLIENT).json()
 
         if "error" in contracts:
             contracts_md = f"""
@@ -377,7 +381,7 @@ class SpaceApp(App):
     @on(Button.Pressed, "#button-login")
     def button_login(self) -> None:
         input_widget = self.query_one("#input-access-token", Input)
-        client.access_token = input_widget.value
+        CLIENT.access_token = input_widget.value
         self.pop_screen()
         self.query_one(AgentBody).update_agent_info()
 
@@ -395,7 +399,7 @@ class SpaceApp(App):
         if "error" in response.json():
             self.query_one(RegisterContainer).update_register_markdown(response)
         else:
-            client.access_token = response.json()["data"]["token"]
+            CLIENT.access_token = response.json()["data"]["token"]
             self.pop_screen()
             await self.push_screen(RegisterResultsScreen())
             self.query_one(RegisterResultsContainer).update_token_markdown()
@@ -406,7 +410,7 @@ class SpaceApp(App):
             os.path.join(os.path.dirname(__file__), "token.json")
         )
         token = {
-            "token": client.access_token,
+            "token": CLIENT.access_token,
         }
         with open(save_file, "w") as file:
             json.dump(token, file)

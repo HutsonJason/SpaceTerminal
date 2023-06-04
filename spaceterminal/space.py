@@ -8,26 +8,26 @@ my_ships_url = f"{api_url}my/ships/"
 my_contracts_url = f"{api_url}my/contracts/"
 
 
-def get_agent(client):
-    """Gets My Agent info.
-
-    https://api.spacetraders.io/v2/my/agent
-
-    Args:
-        client: The Client object with session.
-
-    Returns:
-        {
-          "data": {
-            "accountId": "string",
-            "symbol": "string",
-            "headquarters": "string",
-            "credits": 0,
-            "startingFaction": "string"
-          }
-        }
-    """
-    return client.session.get(agent_url).json()
+# def get_agent(client):
+#     """Gets My Agent info.
+#
+#     https://api.spacetraders.io/v2/my/agent
+#
+#     Args:
+#         client: The Client object with session.
+#
+#     Returns:
+#         {
+#           "data": {
+#             "accountId": "string",
+#             "symbol": "string",
+#             "headquarters": "string",
+#             "credits": 0,
+#             "startingFaction": "string"
+#           }
+#         }
+#     """
+#     return client.session.get(agent_url).json()
 
 
 def register_agent(symbol: str = "", faction: str = "COSMIC"):
