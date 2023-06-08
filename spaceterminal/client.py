@@ -26,7 +26,9 @@ class Client:
     @property
     def session(self):
         s = LimiterSession(limit_statuses=[429, 502], per_second=2, burst=10)
-        s.auth = self.auth
+        # This check is needed for registering new account, the POST can't use auth.
+        if self.access_token is not None:
+            s.auth = self.auth
         s.headers = {"Content-Type": "application/json", "Accept": "application/json"}
         return s
 
