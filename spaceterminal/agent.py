@@ -1,8 +1,9 @@
 import datetime
 
 import requests
-from client import Client
-from constants import URL
+
+from spaceterminal.client import Client
+from spaceterminal.constants import URL
 
 
 class Agent:
