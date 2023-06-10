@@ -4,6 +4,7 @@ import os
 import contracts as con
 import jsonTree as jt
 import space as s
+from agent import Agent
 from client import Client
 from textual import on
 from textual.app import App, ComposeResult
@@ -24,7 +25,8 @@ from textual.widgets import (
     Tree,
 )
 
-client = Client()
+CLIENT = Client()
+AGENT = Agent(CLIENT)
 
 LOGIN_MD = """
 
@@ -53,7 +55,7 @@ class LoginScreen(ModalScreen[str]):
 
 
 class LoginContainer(Container):
-    """Container to login with access token, or create new account."""
+    """Container to log in with access token, or create new account."""
 
     def compose(self) -> ComposeResult:
         yield Markdown(LOGIN_MD)
@@ -76,26 +78,28 @@ class RegisterContainer(Container):
 
     register_markdown = Markdown()
 
-    def on_mount(self):
+    def on_mount(self) -> None:
         self.register_markdown.update(REGISTER_MD)
 
     def compose(self) -> ComposeResult:
         yield self.register_markdown
-        yield Input(placeholder="Call Sign", id="input-symbol")
-        yield Input(placeholder="Starting Faction", value="COSMIC", id="input-faction")
+        yield Input(placeholder="Call Sign", id="input-register-symbol")
+        yield Input(
+            placeholder="Starting Faction", value="COSMIC", id="input-register-faction"
+        )
         yield Button(
             "Register account", id="button-register-account", variant="success"
         )
 
-    def update_register_markdown(self, response):
+    def update_register_markdown(self) -> None:
         """Update the markdown to give the error code and message."""
-        reason_key = [key for key in response.json()["error"]["data"]][0]
+        reason_key = [key for key in AGENT.error["data"]][0]
         register_md = f"""
-Code: {response.json()["error"]["code"]}
+Code: {AGENT.error["code"]}
 
-{response.json()["error"]["message"]}
+{AGENT.error["message"]}
 
-Reason: {response.json()["error"]["data"][reason_key][0]}
+Reason: {AGENT.error["data"][reason_key][0]}
 """
         self.register_markdown.update(register_md)
 
@@ -118,22 +122,6 @@ class RegisterResultsContainer(Container):
     def on_mount(self) -> None:
         self.update_token_markdown()
 
-    def update_token_markdown(self) -> None:
-        token_md = f"""
-Access token is:
-
-{client.access_token}
-"""
-        self.token_markdown.update(token_md)
-
-    def update_save_location_markdown(self, save_location) -> None:
-        location_md = f"""
-Save location of access token is:
-
-{save_location}
-"""
-        self.save_location_markdown.update(location_md)
-
     def compose(self) -> ComposeResult:
         yield self.token_markdown
         yield self.save_location_markdown
@@ -144,37 +132,67 @@ Save location of access token is:
         )
         yield Button("Close", id="button-close-register-success", variant="error")
 
+    def update_token_markdown(self) -> None:
+        token_md = f"""
+Access token is:
+
+{CLIENT.access_token}
+"""
+        self.token_markdown.update(token_md)
+
+    def update_save_location_markdown(self, save_location: str) -> None:
+        location_md = f"""
+Save location of access token is:
+
+{save_location}
+"""
+        self.save_location_markdown.update(location_md)
+
 
 class AgentBody(Static):
+    """Body content of the Agent tab"""
+
     agent_markdown = Markdown()
+    last_updated_markdown = Markdown(classes="markdown-last-updated")
 
     def on_mount(self) -> None:
         self.update_agent_info()
 
     def compose(self) -> ComposeResult:
+        with Horizontal(classes="horizontal-last-updated"):
+            yield self.last_updated_markdown
+            yield Button("Update", id="button-update-agent", variant="warning")
         yield self.agent_markdown
 
-    def update_agent_info(self) -> None:
-        agent = s.get_agent(client)
-        if "error" in agent:
-            agent_md = f"""
-{agent["error"]["message"]}
+    @on(Button.Pressed, "#button-update-agent")
+    def button_update_agent(self) -> None:
+        self.update_agent_info()
 
-Code: {agent["error"]["code"]}"""
+    def update_agent_info(self) -> None:
+        AGENT.update_agent()
+
+        if AGENT.error is not None:
+            agent_md = f"""
+Code: {AGENT.error["code"]}
+
+{AGENT.error["message"]}"""
             self.agent_markdown.update(agent_md)
         else:
-            agent = agent["data"]
             agent_md = f"""
-Account ID: {agent["accountId"]}
+Account ID: {AGENT.account_id}
 
-Symbol: {agent["symbol"]}
+Symbol: {AGENT.symbol}
 
-Headquarters: {agent["headquarters"]}
+Headquarters: {AGENT.headquarters}
 
-Credits: {agent["credits"]}
+Credits: {AGENT.my_credits}
 
-Starting Faction: {agent["startingFaction"]}"""
+Starting Faction: {AGENT.starting_faction}
+
+Last Updated: {AGENT.last_updated}"""
+            last_updated_md = f"""Last Updated: {AGENT.last_updated}"""
             self.agent_markdown.update(agent_md)
+            self.last_updated_markdown.update(last_updated_md)
 
 
 class StatusBody(Static):
@@ -182,13 +200,13 @@ class StatusBody(Static):
 
     status_markdown = Markdown()
 
-    def on_mount(self):
+    def on_mount(self) -> None:
         self.update_status()
 
     def compose(self) -> ComposeResult:
         yield self.status_markdown
 
-    def update_status(self):
+    def update_status(self) -> None:
         response = s.get_status()
         response_code = response.status_code
         status = s.get_status().json()
@@ -253,7 +271,7 @@ class ShipsBody(Static):
         yield Tree("Root", id="tree-ships")
 
     def update_my_ships_info(self):
-        ships = s.get_my_ships(client).json()
+        ships = s.get_my_ships(CLIENT).json()
 
         if "error" in ships:
             ships_md = f"""
@@ -318,7 +336,7 @@ class ContractsBody(Static):
         yield Tree("Root", id="tree-contracts")
 
     def update_my_contracts_info(self):
-        contracts = s.get_my_contracts(client).json()
+        contracts = s.get_my_contracts(CLIENT).json()
 
         if "error" in contracts:
             contracts_md = f"""
@@ -366,7 +384,7 @@ class SpaceApp(App):
                     yield ContractsBody()
             yield Footer()
 
-    def on_mount(self):
+    def on_mount(self) -> None:
         self.push_screen(self.MainScreen())
         self.push_screen(LoginScreen())
 
@@ -377,7 +395,7 @@ class SpaceApp(App):
     @on(Button.Pressed, "#button-login")
     def button_login(self) -> None:
         input_widget = self.query_one("#input-access-token", Input)
-        client.access_token = input_widget.value
+        CLIENT.access_token = input_widget.value
         self.pop_screen()
         self.query_one(AgentBody).update_agent_info()
 
@@ -387,26 +405,26 @@ class SpaceApp(App):
         self.push_screen(RegisterScreen())
 
     @on(Button.Pressed, "#button-register-account")
-    async def button_register_account(self):
-        input_symbol = self.query_one("#input-symbol", Input).value
-        input_faction = self.query_one("#input-faction", Input).value
-        response = s.register_agent(input_symbol, input_faction)
+    async def button_register_account(self) -> None:
+        input_symbol = self.query_one("#input-register-symbol", Input).value
+        input_faction = self.query_one("#input-register-faction", Input).value
+        AGENT.register_agent(input_symbol, input_faction)
 
-        if "error" in response.json():
-            self.query_one(RegisterContainer).update_register_markdown(response)
+        if AGENT.error is not None:
+            self.query_one(RegisterContainer).update_register_markdown()
         else:
-            client.access_token = response.json()["data"]["token"]
             self.pop_screen()
             await self.push_screen(RegisterResultsScreen())
             self.query_one(RegisterResultsContainer).update_token_markdown()
 
+    # TODO This may be able to move to the RegisterResultsContainer Class.
     @on(Button.Pressed, "#button-save-access-token")
-    def button_save_access_token(self):
+    def button_save_access_token(self) -> None:
         save_file = os.path.abspath(
             os.path.join(os.path.dirname(__file__), "token.json")
         )
         token = {
-            "token": client.access_token,
+            "token": CLIENT.access_token,
         }
         with open(save_file, "w") as file:
             json.dump(token, file)
@@ -415,23 +433,27 @@ class SpaceApp(App):
         )
 
     @on(Button.Pressed, "#button-close-register-success")
-    def button_close_register_success(self):
+    def button_close_register_success(self) -> None:
         self.pop_screen()
         self.query_one(AgentBody).update_agent_info()
 
+    # TODO Possibly replace this with just an update button.
     @on(TabbedContent.TabActivated, tab="#ships")
-    def tab_ships_activated(self):
+    def tab_ships_activated(self) -> None:
         self.query_one(ShipsBody).update_my_ships_info()
         # This will focus on the tree immediately, so the bindings show in the footer.
         self.set_focus(self.query_one("#tree-ships"))
 
+    # TODO Possibly replace this with just an update button.
     @on(TabbedContent.TabActivated, tab="#tab-contracts")
-    def tab_contracts_activated(self):
+    def tab_contracts_activated(self) -> None:
         self.query_one(ContractsBody).update_my_contracts_info()
         # This will focus on the tree immediately, so the bindings show in the footer.
         self.set_focus(self.query_one("#tree-contracts"))
 
 
 if __name__ == "__main__":
+    # TODO It may be worth moving this to top as a global. Then it could be called
+    # within the container classes for button presses and screen pop/push.
     app = SpaceApp()
     app.run()

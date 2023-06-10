@@ -65,3 +65,14 @@ ModalScreen {
     width: 1fr;
  }
 
+.horizontal-last-updated {
+    height: auto;
+    width: 100%;
+    padding: 1 2;
+    margin: 1;
+    border: round $secondary
+}
+
+.markdown-last-updated {
+    width: 1fr;
+}
