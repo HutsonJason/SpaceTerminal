@@ -46,12 +46,15 @@ Available recruiting factions: {s.get_factions_list()}
 
 
 class LoginScreen(ModalScreen[str]):
-    BINDINGS = [("escape", "app.pop_screen", "Close Login")]
+    BINDINGS = [
+        Binding(key="escape", action="app.pop_screen", description="Close Login")
+    ]
 
     def compose(self) -> ComposeResult:
         modal = LoginContainer(id="modal-login")
         modal.border_title = "Login"
         yield modal
+        yield AppFooter()
 
 
 class LoginContainer(Container):
@@ -65,12 +68,15 @@ class LoginContainer(Container):
 
 
 class RegisterScreen(ModalScreen[str]):
-    BINDINGS = [("escape", "app.pop_screen", "Close Register")]
+    BINDINGS = [
+        Binding(key="escape", action="app.pop_screen", description="Close Register")
+    ]
 
     def compose(self) -> ComposeResult:
         modal = RegisterContainer(id="modal-login")
         modal.border_title = "Register new agent"
         yield modal
+        yield AppFooter()
 
 
 class RegisterContainer(Container):
@@ -105,12 +111,15 @@ Reason: {AGENT.error["data"][reason_key][0]}
 
 
 class RegisterResultsScreen(ModalScreen):
-    BINDINGS = [("escape", "app.pop_screen", "Close Popup")]
+    BINDINGS = [
+        Binding(key="escape", action="app.pop_screen", description="Close Popup")
+    ]
 
     def compose(self) -> ComposeResult:
         modal = RegisterResultsContainer(id="modal-login")
         modal.border_title = "Register Successful!"
         yield modal
+        yield AppFooter()
 
 
 class RegisterResultsContainer(Container):
@@ -252,8 +261,8 @@ Frequency: {status["serverResets"]["frequency"]}
 
 class ShipsBody(Static):
     BINDINGS = [
-        ("e", "expand_all_tree", "Expand all"),
-        ("c", "collapse_all_tree", "Collapse all"),
+        Binding(key="e", action="expand_all_tree", description="Expand all"),
+        Binding(key="c", action="collapse_all_tree", description="Collapse all"),
     ]
 
     ships_markdown = Markdown()
@@ -296,8 +305,8 @@ Code: {ships["error"]["code"]}
 
 class ContractsBody(Static):
     BINDINGS = [
-        ("e", "expand_all_tree", "Expand all"),
-        ("c", "collapse_all_tree", "Collapse all"),
+        Binding(key="e", action="expand_all_tree", description="Expand all"),
+        Binding(key="c", action="collapse_all_tree", description="Collapse all"),
     ]
 
     contracts_markdown = Markdown()
@@ -359,17 +368,29 @@ Code: {contracts["error"]["code"]}
             self.contracts_markdown.update(contracts_md)
 
 
+class AppFooter(Footer):
+    ctrl_to_caret = False
+    upper_case_keys = True
+
+
 class SpaceApp(App):
     CSS_PATH = "style.css"
     TITLE = "SpaceTerminal"
-    BINDINGS = [Binding("ctrl+c", "app.quit", "Quit", priority=True, show=False)]
+    BINDINGS = [
+        Binding(
+            key="ctrl+c",
+            action="app.quit",
+            description="Quit",
+            priority=True,
+            show=False,
+        ),
+        Binding(key="escape", action="app.quit", description="Quit"),
+        Binding(key="ctrl+t", action="app.toggle_dark", description="Toggle dark mode"),
+        Binding(key="l", action="login", description="Login"),
+    ]
 
     class MainScreen(Screen):
-        BINDINGS = [
-            ("escape", "app.quit", "Quit"),
-            ("ctrl+t", "app.toggle_dark", "Toggle dark mode"),
-            ("l", "login", "Login"),
-        ]
+        """Primary screen that holds all the content."""
 
         def compose(self) -> ComposeResult:
             yield Header(show_clock=True)
@@ -382,7 +403,7 @@ class SpaceApp(App):
                     yield ShipsBody()
                 with TabPane("Contracts", id="tab-contracts"):
                     yield ContractsBody()
-            yield Footer()
+            yield AppFooter()
 
     def on_mount(self) -> None:
         self.push_screen(self.MainScreen())
@@ -438,14 +459,14 @@ class SpaceApp(App):
         self.query_one(AgentBody).update_agent_info()
 
     # TODO Possibly replace this with just an update button.
-    @on(TabbedContent.TabActivated, tab="#ships")
+    @on(TabbedContent.TabActivated, pane="#ships")
     def tab_ships_activated(self) -> None:
         self.query_one(ShipsBody).update_my_ships_info()
         # This will focus on the tree immediately, so the bindings show in the footer.
         self.set_focus(self.query_one("#tree-ships"))
 
     # TODO Possibly replace this with just an update button.
-    @on(TabbedContent.TabActivated, tab="#tab-contracts")
+    @on(TabbedContent.TabActivated, pane="#tab-contracts")
     def tab_contracts_activated(self) -> None:
         self.query_one(ContractsBody).update_my_contracts_info()
         # This will focus on the tree immediately, so the bindings show in the footer.
